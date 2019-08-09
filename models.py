@@ -1,28 +1,14 @@
 import os
 
 from peewee import *
-from playhouse.postgres_ext import BinaryJSONField
-
-
-def load_database_config():
-    return {
-        "name": os.getenv("SOBS_DB_NAME"),
-        "user": os.getenv("SOBS_DB_USER"),
-        "password": os.getenv("SOBS_DB_PASSWORD"),
-        "port": os.getenv("SOBS_DB_PORT"),
-        "host": os.getenv("SOBS_DB_HOST"),
-    }
-
+from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
 
 def get_database():
-    config = load_database_config()
-    db = PostgresqlDatabase(
-        config["name"],
-        user=config["user"],
-        password=config["password"],
-        host=config["host"],
-        port=config["port"],
-    )
+    db = SqliteExtDatabase('sra.sqlite3', pragmas=(
+        ("cache_size", -1024 * 64), # 64MB page cache
+        ("journal_mode", "wal"), # use WAL-mode (you should always use this!)
+        ("foreign_keys", 1), # enforce foreign key constraints (is this not on by default?)
+    ))
     return db
 
 
@@ -34,7 +20,7 @@ class Base(Model):
 class Sample(Base):
     id = CharField(primary_key=True, index=True)
     taxid = IntegerField(null=True, index=True)
-    attributes = BinaryJSONField()
+    attributes = JSONField()
 
     scientific_name = CharField(null=True)
 
