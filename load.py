@@ -8,7 +8,7 @@ from models import Experiment, Sample, Run, get_database
 from pprint import pprint
 import peewee
 
-TAR_PATH = "NCBI_SRA_Metadata_Full_20181203.tar.gz"
+TAR_PATH = "NCBI_SRA_Metadata_Full_20190629.tar.gz"
 
 
 def recurse_node(node):
