@@ -19,13 +19,6 @@ Because I need to look up hundreds of thousands of samples.
 There is no straightforward way to export the list of sequencing run IDs for a
 given set of samples and I need the run IDs to download the raw reads.
 
-## ~Why Mongo?~
-
-~NCBI's data is partially schema-less and I just wanted a quick way to query a
-large quantity of mostly static documents.~
-
-I switched back to PostgreSQL and JSONB for the schema-less metadata part.
-
 # Instructions
 
 Install requirements:
