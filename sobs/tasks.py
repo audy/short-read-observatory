@@ -9,6 +9,21 @@ from sobs.models import Experiment, Sample, Run, get_database
 import peewee
 
 
+def fetch_first_n_sequences_of_fastq_from_ncbi_sra(sra_id, out_path, n=25):
+    """
+    Given an NCBI SRA Run ID, will fetch the first n lines of that file and
+    save it to {SRR_ID}.fastq
+    """
+
+    n_lines = n * 4  # because fastq
+
+    res = subprocess.check_output(
+        f"/usr/local/bin/fastq-dump -F -Z {sra_id} | head -n {n_lines} > {out_path}", shell=True
+    )
+
+    return res
+
+
 def recurse_node(node):
     return [node, [child for child in node.iter()]]
 
