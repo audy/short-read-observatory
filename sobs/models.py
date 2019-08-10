@@ -26,7 +26,7 @@ class Sample(Base):
     taxid = IntegerField(null=True, index=True)
     attributes = JSONField()
 
-    scientific_name = CharField(null=True)
+    scientific_name = CharField(null=True, index=True)
 
 
 class Experiment(Base):
@@ -35,13 +35,13 @@ class Experiment(Base):
     sample_accession = CharField(null=True, index=True)
     description = TextField(null=True)
 
-    library_name = CharField(null=True)
-    library_strategy = CharField(null=True)
-    library_source = CharField(null=True)
-    library_selection = CharField(null=True)
-    library_layout = CharField(null=True)
-    platform_type = CharField(null=True)
-    platform_instrument_model = CharField(null=True)
+    library_name = CharField(null=True, index=True)
+    library_strategy = CharField(null=True, index=True)
+    library_source = CharField(null=True, index=True)
+    library_selection = CharField(null=True, index=True)
+    library_layout = CharField(null=True, index=True)
+    platform_type = CharField(null=True, index=True)
+    platform_instrument_model = CharField(null=True, index=True)
 
 
 class Run(Base):
