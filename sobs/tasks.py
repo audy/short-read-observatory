@@ -1,14 +1,12 @@
-#!/usr/bin/env python3
-
 import tarfile
 import xml.etree.ElementTree
 from pprint import pprint
 from collections import defaultdict
-from models import Experiment, Sample, Run, get_database
 from pprint import pprint
-import peewee
 
-TAR_PATH = "NCBI_SRA_Metadata_Full_20190629.tar.gz"
+from sobs.models import Experiment, Sample, Run, get_database
+
+import peewee
 
 
 def recurse_node(node):
@@ -38,10 +36,7 @@ def load_run_data(node):
 
         title = get_first_node(run, "TITLE")
 
-        yield primary_key, {
-            "title": title,
-            "experiment_accession": experiment_accession,
-        }
+        yield primary_key, {"title": title, "experiment_accession": experiment_accession}
 
 
 def load_sample_data(node):
@@ -99,11 +94,7 @@ def load_sample_data(node):
 
         yield (
             primary_key,
-            {
-                "attributes": attributes,
-                "scientific_name": scientific_name,
-                "taxid": taxid,
-            },
+            {"attributes": attributes, "scientific_name": scientific_name, "taxid": taxid},
         )
 
 
@@ -114,9 +105,7 @@ def load_experiment_data(node):
         primary_key = experiment.attrib["accession"]
 
         # jump through hoops to get to layout
-        layout = {
-            n.tag for n in experiment.find("DESIGN/LIBRARY_DESCRIPTOR/LIBRARY_LAYOUT")
-        }
+        layout = {n.tag for n in experiment.find("DESIGN/LIBRARY_DESCRIPTOR/LIBRARY_LAYOUT")}
 
         assert len(layout) == 1, layout
 
@@ -135,9 +124,7 @@ def load_experiment_data(node):
                 experiment, "DESIGN/SAMPLE_DESCRIPTOR/IDENTIFIERS/PRIMARY_ID"
             ),
             "description": get_first_node(experiment, "DESIGN/DESIGN_DESCRIPTION"),
-            "library_name": get_first_node(
-                experiment, "DESIGN/LIBRARY_DESCRIPTOR/LIBRARY_NAME"
-            ),
+            "library_name": get_first_node(experiment, "DESIGN/LIBRARY_DESCRIPTOR/LIBRARY_NAME"),
             "library_strategy": get_first_node(
                 experiment, "DESIGN/LIBRARY_DESCRIPTOR/LIBRARY_STRATEGY"
             ),
@@ -155,23 +142,15 @@ def load_experiment_data(node):
         yield primary_key, experiment_data
 
 
-def main():
-
-    n_experiments, n_samples, n_runs = 0, 0, 0
-
+def create_tables():
     db = get_database()
-
-    # clear pre-existing data
-    print("--- dropping existing data")
-    db.drop_tables([Sample, Experiment, Run])
-    print("--- migrating up!")
     db.create_tables([Experiment, Sample, Run])
 
-    batch_size = 1000
 
-    with tarfile.open(TAR_PATH, "r:gz") as tar:
+def load_from_ncbi_tar(tar_path, batch_size=10000):
+    with tarfile.open(tar_path, "r:gz") as tar:
         for n, member in enumerate(tar):
-            print(f"--- loading {member.name}")
+            print(member)
             h = tar.extractfile(member)
 
             experiments_batch = []
@@ -185,23 +164,14 @@ def main():
                         root = xml.etree.ElementTree.parse(handle)
                         for _id, experiment_data in load_experiment_data(root):
                             experiments_batch.append({"id": _id, **experiment_data})
-                            n_experiments += 1
 
                             if len(experiments_batch) >= batch_size:
-                                print("--- inserting batch of experiments")
-                                print(len(experiments_batch))
                                 Experiment.insert_many(experiments_batch).execute()
-                                print(
-                                    f"--- n_experiments={n_experiments}; row count={Experiment.select().count()}"
-                                )
                                 experiments_batch = []
 
+                    # insert final batch
                     if len(experiments_batch) > 0:
-                        try:
-                            Experiment.insert_many(experiments_batch).execute()
-                        except peewee.DataError:
-                            pprint(experiments_batch)
-                            quit(-1)
+                        Experiment.insert_many(experiments_batch).execute()
 
                 if "sample" in member.name:
                     with tar.extractfile(member) as handle:
@@ -209,16 +179,11 @@ def main():
                         for _id, sample_data in load_sample_data(root):
                             row = {"id": _id, **sample_data}
                             samples_batch.append(row)
-                            n_samples += 1
                             if len(samples_batch) >= batch_size:
-                                print(len(samples_batch))
-                                print("--- inserting batch of samples")
                                 Sample.insert_many(samples_batch).execute()
-                                print(
-                                    f"--- n_samples={n_samples}; row count={Sample.select().count()}"
-                                )
                                 samples_batch = []
 
+                    # insert final batch
                     if len(samples_batch) > 0:
                         Sample.insert_many(samples_batch).execute()
 
@@ -227,22 +192,13 @@ def main():
                         root = xml.etree.ElementTree.parse(handle)
                         for _id, run_data in load_run_data(root):
                             runs_batch.append({"id": _id, **run_data})
-                            n_runs += 1
 
                             if len(runs_batch) >= batch_size:
-                                print(len(runs_batch))
-                                print("--- inserting batch of runs")
                                 Run.insert_many(runs_batch).execute()
-                                print(
-                                    f"--- n_runs={n_runs}; row count={Run.select().count()}"
-                                )
                                 runs_batch = []
+                    # insert final batch
                     if len(runs_batch) > 0:
                         Run.insert_many(runs_batch).execute()
 
             else:
                 pass
-
-
-if __name__ == "__main__":
-    main()

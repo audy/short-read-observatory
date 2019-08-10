@@ -3,12 +3,16 @@ import os
 from peewee import *
 from playhouse.sqlite_ext import SqliteExtDatabase, JSONField
 
+
 def get_database():
-    db = SqliteExtDatabase('sra.sqlite3', pragmas=(
-        ("cache_size", -1024 * 64), # 64MB page cache
-        ("journal_mode", "wal"), # use WAL-mode (you should always use this!)
-        ("foreign_keys", 1), # enforce foreign key constraints (is this not on by default?)
-    ))
+    db = SqliteExtDatabase(
+        "sra.sqlite3",
+        pragmas=(
+            ("cache_size", -1024 * 64),  # 64MB page cache
+            ("journal_mode", "wal"),  # use WAL-mode (you should always use this!)
+            ("foreign_keys", 1),  # enforce foreign key constraints (is this not on by default?)
+        ),
+    )
     return db
 
 
